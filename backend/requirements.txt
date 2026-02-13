@@ -1,0 +1,20 @@
+# Core FastAPI
+fastapi==0.111.1
+
+# Serveur ASGI pour développement et production
+uvicorn[standard]==0.23.2
+
+# Base de données (PostgreSQL) et ORM
+sqlalchemy==2.0.22
+# databases==1.2.7
+psycopg2-binary==2.9.9
+
+# Variables d'environnement
+python-dotenv==1.0.1
+
+# Authentification / sécurité
+passlib==1.7.4
+python-jose==3.3.0
+
+# Validation avancée des modèles
+pydantic[email]==2.5.2
