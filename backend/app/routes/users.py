@@ -1,31 +1,24 @@
-from app import schemas
-from fastapi import APIRouter, Depends
+from app.schemas import users as schemas
+from app.crud import users as crud
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.database import get_db, SessionLocal
+from app.database import get_db
 from app import models
+from typing import List
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-@router.get("/")
-def read_users(db: Session = Depends(get_db)):
-    return db.query(models.User).all()
+@router.get("/", response_model=list[schemas.UserRead])
+def get_users(db: Session = Depends(get_db)):
+    return crud.get_users(db)
 
-@router.post("/create", response_model=schemas.UserResponse)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_user = models.User(email=user.email, username=user.username)
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+@router.post("/", response_model=schemas.UserRead, status_code=201) # on récupère la reponse
+def create_user(
+    user: schemas.UserCreate,   # ← on récupère le body ici (Request)
+    db: Session = Depends(get_db)
+):
+    return crud.create_user(db, user)
 
-@router.delete("/delete/{user_id}")
+@router.delete("/{user_id}", status_code=204)
 def delete_user(user_id: int, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    db.delete(user)
-    db.commit()
-
-    return {"message": "User deleted"}
+    return crud.delete_user(db, user_id)

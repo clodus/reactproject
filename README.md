@@ -18,3 +18,11 @@ docker compose up -d
 cd frontend 
 npm install
 npm run dev
+
+# ARBO
+Fichier	Rôle
+models.py	Structure DB
+schemas.py	Format JSON
+crud.py	Logique DB
+routers/	Endpoints HTTP
+main.py	Démarrage app

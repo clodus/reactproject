@@ -3,12 +3,15 @@ import { useEffect, useState } from "react";
 type User = {
   id: number;
   email: string;
+  firstname: string;
+  lastname: string;
 };
 
 export default function Users() {
   const [users, setUsers] = useState<User[]>([]);
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
+  const [firstname, setFirstname] = useState("");
+  const [lastname, setLastname] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +22,7 @@ export default function Users() {
   // Recupere tous les utilisateurs
   const fetchUsers = async () => {
     try {
-      const res = await fetch(`${API_URL}/users`);
+      const res = await fetch(`${API_URL}/users/`);
       const data = await res.json();
       setUsers(data);
     } catch (err) {
@@ -40,12 +43,12 @@ export default function Users() {
     setSuccess(null);
 
     try {
-      const res = await fetch(`${API_URL}/users/create`, {
+      const res = await fetch(`${API_URL}/users/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, username }),
+        body: JSON.stringify({ email, firstname, lastname }),
       });
 
       if (!res.ok) {
@@ -54,7 +57,8 @@ export default function Users() {
 
       setSuccess("Utilisateur créé avec succès");
       setEmail("");
-      setUsername("");
+      setFirstname("");
+      setLastname("");
       fetchUsers();
     } catch (err) {
       setError("Erreur lors de la création de l'utilisateur");
@@ -66,7 +70,7 @@ export default function Users() {
   // Supprimer utilisateur
   const handleDelete = async (id: number) => {
     try {
-      await fetch(`${API_URL}/users/delete/${id}`, {
+      await fetch(`${API_URL}/users/${id}`, {
         method: "DELETE",
       });
 
@@ -77,73 +81,94 @@ export default function Users() {
   };
 
   return (
-    <div style={{ padding: "20px", maxWidth: "400px" }}>
-      <h2>Créer un utilisateur</h2>
+<div
+  style={{
+    width: "100%",
+    padding: "40px 20px",
+    display: "flex",
+    justifyContent: "center",
+  }}
+>
+  <div style={{ width: "100%", maxWidth: "800px" }}>
+    <h2>Créer un utilisateur</h2>
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            required
-            onChange={(e) => setEmail(e.target.value)}
-            style={{ width: "100%", marginBottom: "10px" }}
-          />
-        </div>
+    <form onSubmit={handleSubmit}>
+      <div>
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          required
+          onChange={(e) => setEmail(e.target.value)}
+          style={{ width: "100%", marginBottom: "10px" }}
+        />
+      </div>
 
-        <div>
-          <input
-            type="text"
-            placeholder="Mot de passe"
-            value={username}
-            required
-            onChange={(e) => setUsername(e.target.value)}
-            style={{ width: "100%", marginBottom: "10px" }}
-          />
-        </div>
+      <div>
+        <input
+          type="text"
+          placeholder="First Name"
+          value={firstname}
+          required
+          onChange={(e) => setFirstname(e.target.value)}
+          style={{ width: "100%", marginBottom: "10px" }}
+        />
+      </div>
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Création..." : "Créer"}
-        </button>
-      </form>
+      <div>
+        <input
+          type="text"
+          placeholder="Last Name"
+          value={lastname}
+          required
+          onChange={(e) => setLastname(e.target.value)}
+          style={{ width: "100%", marginBottom: "10px" }}
+        />
+      </div>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      {success && <p style={{ color: "green" }}>{success}</p>}
+      <button type="submit" disabled={loading}>
+        {loading ? "Création..." : "Créer"}
+      </button>
+    </form>
 
-      <hr />
+    {error && <p style={{ color: "red" }}>{error}</p>}
+    {success && <p style={{ color: "green" }}>{success}</p>}
 
-      <h3>Liste des utilisateurs</h3>
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {users.map((user) => (
-            <li
-              key={user.id}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "8px",
-                padding: "6px",
-                border: "1px solid #ddd",
-              }}
-            >
-              <span>{user.email}</span>
+    <hr />
 
-              <button
-                onClick={() => handleDelete(user.id)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "red",
-                  fontWeight: "bold",
-                }}
-              >
-                ❌
-              </button>
-            </li>
-          ))}
-        </ul>
-    </div>
+    <h3>Liste des utilisateurs</h3>
+    <ul style={{ listStyle: "none", padding: 0 }}>
+      {users.map((user) => (
+        <li
+          key={user.id}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "8px",
+            padding: "10px",
+            border: "1px solid #ddd",
+            borderRadius: "6px",
+          }}
+        >
+          <span>{user.lastname}</span>
+
+          <button
+            onClick={() => handleDelete(user.id)}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "red",
+              fontWeight: "bold",
+            }}
+          >
+            ❌
+          </button>
+        </li>
+      ))}
+    </ul>
+  </div>
+</div>
   );
 }
