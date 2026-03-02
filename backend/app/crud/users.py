@@ -4,7 +4,7 @@ from sqlalchemy.orm import selectinload, Session
 from app import models, schemas
 
 def get_users(db: Session):
-    stmt = select(models.User)
+    stmt = select(models.User).options(selectinload(models.User.job))
     return db.scalars(stmt).all() # renvoie une liste d'objets User 
 
 def create_user(db: Session, user):
@@ -25,7 +25,11 @@ def delete_user(db: Session, user_id: int):
     db.commit()
     return {"message": "User deleted"}
 
-def read_users_with_projects(db: Session):
-    stmt = select(models.User).options(selectinload(models.User.projects))
-    result = db.execute(stmt)
-    return result.scalars().all()
+def update_user_job(db: Session, user_id: int, job_id: int):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.job_id = job_id
+    db.commit()
+    db.refresh(user)
+    return user

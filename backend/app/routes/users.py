@@ -19,6 +19,11 @@ def create_user(
 ):
     return crud.create_user(db, user)
 
+# Mettre à jour le job d'un utilisateur
+@router.put("/{user_id}/job/{job_id}", response_model=schemas.UserRead)
+def put_user_job(user_id: int, job_id: int, db: Session = Depends(get_db)):
+    return crud.update_user_job(db, user_id, job_id)
+
 @router.delete("/{user_id}", status_code=204)
 def delete_user(user_id: int, db: Session = Depends(get_db)):
     return crud.delete_user(db, user_id)

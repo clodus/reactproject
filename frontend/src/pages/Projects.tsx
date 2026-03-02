@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 
-type Job = {
+type Project = {
   id: number;
-  label: string;
+  name: string;
   description: string;
 };
 
-export default function Jobs() {
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [label, setLabel] = useState("");
+export default function Projects() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
   const [loading, setLoading] = useState(false);
@@ -17,22 +17,22 @@ export default function Jobs() {
 
   const API_URL = "http://127.0.0.1:8000";
 
-  // Recupere tous les jobs
-  const fetchJobs = async () => {
+  // Recupere tous les projects
+  const fetchProjects = async () => {
     try {
-      const res = await fetch(`${API_URL}/jobs/`);
+      const res = await fetch(`${API_URL}/projects/`);
       const data = await res.json();
-      setJobs(data);
+      setProjects(data);
     } catch (err) {
-      setError("Impossible de charger les jobs");
+      setError("Impossible de charger les projects");
     }
   };
 
   useEffect(() => {
-    fetchJobs();
+    fetchProjects();
   }, []);
 
-  // Creation utilisateur
+  // Creation projet
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -41,24 +41,24 @@ export default function Jobs() {
     setSuccess(null);
 
     try {
-      const res = await fetch(`${API_URL}/jobs/`, {
+      const res = await fetch(`${API_URL}/projects/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ label, description }),
+        body: JSON.stringify({ name, description }),
       });
 
       if (!res.ok) {
         throw new Error("Erreur lors de la création");
       }
 
-      setSuccess("Job créé avec succès");
-      setLabel("");
+      setSuccess("Projet créé avec succès");
+      setName("");
       setDescription("");
-      fetchJobs();
+      fetchProjects();
     } catch (err) {
-      setError("Erreur lors de la création du job");
+      setError("Erreur lors de la création du projet");
     } finally {
       setLoading(false);
     }
@@ -67,11 +67,11 @@ export default function Jobs() {
   // Supprimer job
   const handleDelete = async (id: number) => {
     try {
-      await fetch(`${API_URL}/jobs/${id}`, {
+      await fetch(`${API_URL}/projects/${id}`, {
         method: "DELETE",
       });
 
-      fetchJobs(); // refresh
+      fetchProjects(); // refresh
     } catch (err) {
       setError("Erreur lors de la suppression");
     }
@@ -87,16 +87,16 @@ export default function Jobs() {
   }}
 >
   <div style={{ width: "100%", maxWidth: "800px" }}>
-    <h2>Créer un job</h2>
+    <h2>Créer un projet</h2>
 
     <form onSubmit={handleSubmit}>
       <div>
         <input
           type="text"
-          placeholder="Label"
-          value={label}
+          placeholder="Name"
+          value={name}
           required
-          onChange={(e) => setLabel(e.target.value)}
+          onChange={(e) => setName(e.target.value)}
           style={{ width: "100%", marginBottom: "10px" }}
         />
       </div>
@@ -122,11 +122,11 @@ export default function Jobs() {
 
     <hr />
 
-    <h3>Liste des jobs</h3>
+    <h3>Liste des projets</h3>
     <ul style={{ listStyle: "none", padding: 0 }}>
-      {jobs.map((job) => (
+      {projects.map((project) => (
         <li
-          key={job.id}
+          key={project.id}
           style={{
             display: "flex",
             justifyContent: "space-between",
@@ -137,10 +137,10 @@ export default function Jobs() {
             borderRadius: "6px",
           }}
         >
-          <span>{job.label}</span>
+          <span>{project.name}</span>
 
           <button
-            onClick={() => handleDelete(job.id)}
+            onClick={() => handleDelete(project.id)}
             style={{
               background: "none",
               border: "none",

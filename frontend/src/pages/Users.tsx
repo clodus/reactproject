@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 
+type Job = { id: number; label: string };
 type User = {
   id: number;
   email: string;
   firstname: string;
   lastname: string;
+  job?: Job | null;
 };
 
 export default function Users() {
   const [users, setUsers] = useState<User[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [email, setEmail] = useState("");
   const [firstname, setFirstname] = useState("");
   const [lastname, setLastname] = useState("");
@@ -24,15 +27,34 @@ export default function Users() {
     try {
       const res = await fetch(`${API_URL}/users/`);
       const data = await res.json();
-      setUsers(data);
+      // Trier par firstname
+      const sorted = data.sort((a: { firstname: string; }, b: { firstname: any; }) => a.firstname.localeCompare(b.firstname));
+      setUsers(sorted);
     } catch (err) {
       setError("Impossible de charger les utilisateurs");
     }
   };
 
+  const fetchJobs = async () => {
+    try {
+      const res = await fetch(`${API_URL}/jobs`);
+      const data = await res.json();
+      console.log("data jobs:", data); // 🔍 vérifier le format
+      setJobs(Array.isArray(data) ? data : []); // s'assurer que c'est un tableau
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
+    fetchJobs();
   }, []);
+
+  const handleAssignJob = async (userId: number, jobId: number) => {
+    await fetch(`${API_URL}/users/${userId}/job/${jobId}`, { method: "PUT" });
+    fetchUsers();
+  };
 
   // Creation utilisateur
   const handleSubmit = async (e: React.FormEvent) => {
@@ -151,7 +173,23 @@ export default function Users() {
             borderRadius: "6px",
           }}
         >
-          <span>{user.lastname}</span>
+              <div>
+                {user.lastname} {user.firstname}
+                <select
+                  value={user.job?.id || ""}
+                  onChange={e =>{ 
+                    const jobId = Number(e.target.value);
+                    if (jobId > 0) {
+                      handleAssignJob(user.id, Number(e.target.value))
+                    }
+                  }}
+                  style={{ marginLeft: "10px" }}
+                >
+                  <option value="">-- Aucun job --</option>
+                  {jobs?.map(job => <option key={job.id} value={job.id}>{job.label}</option>)}
+                </select>
+              </div>
+          
 
           <button
             onClick={() => handleDelete(user.id)}
