@@ -16,14 +16,17 @@ export default function Header() {
           <Button color="inherit" component={Link} to="/">
             Home
           </Button>
-          <Button color="inherit" component={Link} to="/users">
-            Users
+          <Button color="inherit" component={Link} to="/resources">
+            Resources
           </Button>
           <Button color="inherit" component={Link} to="/jobs">
             Jobs
           </Button>
           <Button color="inherit" component={Link} to="/projects">
             Projects
+          </Button>
+          <Button color="inherit" component={Link} to="/requests">
+            Requests
           </Button>
         </Box>
       </Toolbar>

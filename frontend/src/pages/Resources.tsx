@@ -1,15 +1,20 @@
 import { useEffect, useState } from "react";
 
-type Project = {
+type Job = { id: number; label: string };
+type Resource = {
   id: number;
-  name: string;
-  description: string;
+  email: string;
+  firstname: string;
+  lastname: string;
+  job?: Job | null;
 };
 
-export default function Projects() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+export default function Resources() {
+  const [Resources, setResources] = useState<Resource[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [email, setEmail] = useState("");
+  const [firstname, setFirstname] = useState("");
+  const [lastname, setLastname] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,22 +22,40 @@ export default function Projects() {
 
   const API_URL = "http://127.0.0.1:8000";
 
-  // Recupere tous les projects
-  const fetchProjects = async () => {
+  // Recupere tous les utilisateurs
+  const fetchResources = async () => {
     try {
-      const res = await fetch(`${API_URL}/projects/`);
+      const res = await fetch(`${API_URL}/resources/`);
       const data = await res.json();
-      setProjects(data);
+      // Trier par firstname
+      const sorted = data.sort((a: { firstname: string; }, b: { firstname: any; }) => a.firstname.localeCompare(b.firstname));
+      setResources(sorted);
     } catch (err) {
-      setError("Impossible de charger les projects");
+      setError("Impossible de charger les utilisateurs");
+    }
+  };
+
+  const fetchJobs = async () => {
+    try {
+      const res = await fetch(`${API_URL}/jobs/`);
+      const data = await res.json();
+      setJobs(Array.isArray(data) ? data : []); // s'assurer que c'est un tableau
+    } catch (err) {
+      console.error(err);
     }
   };
 
   useEffect(() => {
-    fetchProjects();
+    fetchResources();
+    fetchJobs();
   }, []);
 
-  // Creation projet
+  const handleAssignJob = async (resourceId: number, jobId: number) => {
+    await fetch(`${API_URL}/resources/${resourceId}/job/${jobId}`, { method: "PUT" });
+    fetchResources();
+  };
+
+  // Creation utilisateur
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -41,37 +64,38 @@ export default function Projects() {
     setSuccess(null);
 
     try {
-      const res = await fetch(`${API_URL}/projects/`, {
+      const res = await fetch(`${API_URL}/resources/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name, description }),
+        body: JSON.stringify({ email, firstname, lastname }),
       });
 
       if (!res.ok) {
         throw new Error("Erreur lors de la création");
       }
 
-      setSuccess("Projet créé avec succès");
-      setName("");
-      setDescription("");
-      fetchProjects();
+      setSuccess("Ressource créé avec succès");
+      setEmail("");
+      setFirstname("");
+      setLastname("");
+      fetchResources();
     } catch (err) {
-      setError("Erreur lors de la création du projet");
+      setError("Erreur lors de la création de la ressource");
     } finally {
       setLoading(false);
     }
   };
 
-  // Supprimer job
+  // Supprimer utilisateur
   const handleDelete = async (id: number) => {
     try {
-      await fetch(`${API_URL}/projects/${id}`, {
+      await fetch(`${API_URL}/resources/${id}`, {
         method: "DELETE",
       });
 
-      fetchProjects(); // refresh
+      fetchResources(); // refresh
     } catch (err) {
       setError("Erreur lors de la suppression");
     }
@@ -98,16 +122,16 @@ export default function Projects() {
         }}
       >
         <h2 style={{ marginBottom: "25px", fontWeight: 600 }}>
-          Créer un projet
+          Créer une ressource
         </h2>
 
         <form onSubmit={handleSubmit}>
           <input
-            type="text"
-            placeholder="Nom du projet"
-            value={name}
+            type="email"
+            placeholder="Email"
+            value={email}
             required
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
             style={{
               width: "100%",
               padding: "12px 14px",
@@ -121,10 +145,27 @@ export default function Projects() {
 
           <input
             type="text"
-            placeholder="Description"
-            value={description}
+            placeholder="First Name"
+            value={firstname}
             required
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => setFirstname(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "12px 14px",
+              marginBottom: "15px",
+              borderRadius: "8px",
+              border: "1px solid #dcdcdc",
+              fontSize: "14px",
+              outline: "none",
+            }}
+          />
+
+          <input
+            type="text"
+            placeholder="Last Name"
+            value={lastname}
+            required
+            onChange={(e) => setLastname(e.target.value)}
             style={{
               width: "100%",
               padding: "12px 14px",
@@ -185,12 +226,12 @@ export default function Projects() {
 
         <hr style={{ margin: "35px 0", border: "none", borderTop: "1px solid #eee" }} />
 
-        <h3 style={{ marginBottom: "15px" }}>Liste des projets</h3>
+        <h3 style={{ marginBottom: "15px" }}>Liste des ressources</h3>
 
         <ul style={{ listStyle: "none", padding: 0 }}>
-          {projects.map((project) => (
+          {Resources.map((resource) => (
             <li
-              key={project.id}
+              key={resource.id}
               style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -205,15 +246,37 @@ export default function Projects() {
             >
               <div>
                 <div style={{ fontWeight: 600 }}>
-                  {project.name}
+                  {resource.lastname} {resource.firstname}
                 </div>
-                <div style={{ fontSize: "13px", color: "#64748b" }}>
-                  {project.description}
+
+                <div style={{ marginTop: "6px" }}>
+                  <select
+                    value={resource.job?.id || ""}
+                    onChange={(e) => {
+                      const jobId = Number(e.target.value);
+                      if (jobId > 0) {
+                        handleAssignJob(resource.id, jobId);
+                      }
+                    }}
+                    style={{
+                      padding: "6px 8px",
+                      borderRadius: "6px",
+                      border: "1px solid #dcdcdc",
+                      fontSize: "13px",
+                    }}
+                  >
+                    <option value="">-- Assigner un job --</option>
+                    {jobs?.map((job) => (
+                      <option key={job.id} value={job.id}>
+                        {job.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
               <button
-                onClick={() => handleDelete(project.id)}
+                onClick={() => handleDelete(resource.id)}
                 style={{
                   background: "#fee2e2",
                   border: "none",

@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from app import models
 from app.database import engine
-from app.routes import users, jobs, projects
+from app.routes import resources, jobs, projects, resource_requests
 
 # Créer l'app AVANT tout
 app = FastAPI(title="Backend FastAPI Starter")
@@ -22,9 +22,10 @@ app.add_middleware(
 models.Base.metadata.create_all(bind=engine)
 
 # Inclure les routes
-app.include_router(users.router)
+app.include_router(resources.router)
 app.include_router(jobs.router)
 app.include_router(projects.router)
+app.include_router(resource_requests.router)
 
 # Route par defaut
 @app.get("/")

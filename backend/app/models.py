@@ -1,13 +1,14 @@
 # structure de ta base de données (SQLAlchemy)
 from typing import List, Optional
 from datetime import datetime
-from sqlalchemy import String, Text, ForeignKey, Table, Column, DateTime, func
+from sqlalchemy import String, Text, ForeignKey, Table, Column, DateTime, func, Enum, Date, Integer
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
     mapped_column,
     relationship
 )
+from enum import Enum as PyEnum
 
 # Date creation et update champs commun
 class TimestampMixin:
@@ -28,10 +29,10 @@ class Base(DeclarativeBase):
     pass
 
 ###
-# TABLE USERS
+# TABLE RESOURCES
 ###
-class User(Base, TimestampMixin):
-    __tablename__ = "users"
+class Resource(Base, TimestampMixin):
+    __tablename__ = "resources"
     
     id: Mapped[int] = mapped_column(primary_key=True)
     firstname: Mapped[str] = mapped_column(String)
@@ -39,7 +40,7 @@ class User(Base, TimestampMixin):
     email: Mapped[str] = mapped_column(String, unique=True)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("jobs.id"), nullable=True)
 
-    job: Mapped[Optional[job]] = relationship("Job", back_populates="users")
+    job: Mapped[Optional[job]] = relationship("Job", back_populates="resources")
 
 ###
 # TABLE JOBS
@@ -51,7 +52,7 @@ class Job(Base, TimestampMixin):
     label: Mapped[str] = mapped_column(String(100))
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    users: Mapped[List["User"]] = relationship("User", back_populates="job")
+    resources: Mapped[List["Resource"]] = relationship("Resource", back_populates="job")
 
 ###
 # TABLE PROJECTS
@@ -62,3 +63,42 @@ class Project(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+###
+# ENUM TASK TYPE
+###
+class TaskType(PyEnum):
+    RUN = "RUN"
+    BUILD = "BUILD"
+    DISCO = "DISCO"
+    ESTIMATION = "ESTIMATION"
+    REFACTO = "REFACTO"
+    KT = "KT"
+
+###
+# TABLE RESOURCE REQUESTS
+###
+class ResourceRequest(Base):
+    __tablename__ = "resource_requests"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    project_id: Mapped[int] = mapped_column(
+        ForeignKey("projects.id")
+    )
+
+    job_id: Mapped[int] = mapped_column(
+        ForeignKey("jobs.id")
+    )
+
+    task_type: Mapped[TaskType] = mapped_column(
+        Enum(TaskType)
+    )
+
+    due_date: Mapped[Date] = mapped_column(Date)
+
+    duration_days: Mapped[int] = mapped_column(Integer)
+
+    # relations
+    project = relationship("Project")
+    job = relationship("Job")

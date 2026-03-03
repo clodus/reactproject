@@ -3,7 +3,7 @@ from .jobs import JobRead  # ← Importer JobRead
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
-class UserBase(BaseModel):
+class ResourceBase(BaseModel):
     email: str
     firstname: str
     lastname: Optional[str] = None
@@ -12,15 +12,15 @@ class UserBase(BaseModel):
 ########################
 # Schema Request (input)
 ########################
-# utilisé quand tu crées un user
-class UserCreate(UserBase):
+# utilisé quand tu crées une ressource
+class RequestResourceCreate(ResourceBase):
     pass
 
 ########################
 # Schema Response (output)
 ########################
-# utilisé quand tu renvoies un user (On n’expose PAS le password)
-class UserRead(UserBase):
+# utilisé quand tu renvoies une ressource (On n’expose PAS le password)
+class ResponseResourceRead(ResourceBase):
     id: int
     job: Optional[JobRead] = None
     model_config = ConfigDict(from_attributes=True)
