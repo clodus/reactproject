@@ -4,8 +4,6 @@ from app.models import TaskType
 from app.schemas.projects import ProjectRead
 from app.schemas.jobs import JobRead
 from app.schemas.resource_assignments import ResponseResourceAssignmentRead
-from app.schemas.resources import ResponseResourceRead
-
 
 ###################
 # Request

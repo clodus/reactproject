@@ -14,10 +14,10 @@ export default function HomePage() {
       >
         <Container>
           <Typography variant="h3" gutterBottom>
-            Bienvenue sur PHand 🚀
+            Let's go PHand 🚀
           </Typography>
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            Gérez vos utilisateurs et vos projets simplement.
+            Gestion des demandes de ressource sur les projets.
           </Typography>
           <Button variant="contained" size="large" sx={{ mt: 3 }}>
             Commencer
@@ -30,9 +30,9 @@ export default function HomePage() {
         <Grid container spacing={4}>
           <Grid>
             <Paper sx={{ p: 4, textAlign: "center" }}>
-              <Typography variant="h6">Gestion Utilisateurs</Typography>
+              <Typography variant="h6">Gestion ressources</Typography>
               <Typography variant="body2" color="text.secondary">
-                Créez et gérez vos utilisateurs facilement.
+                Créez et gérez vos ressources facilement.
               </Typography>
             </Paper>
           </Grid>
@@ -41,16 +41,16 @@ export default function HomePage() {
             <Paper sx={{ p: 4, textAlign: "center" }}>
               <Typography variant="h6">Gestion Projets</Typography>
               <Typography variant="body2" color="text.secondary">
-                Associez des utilisateurs à plusieurs projets.
+                Associez des ressources à plusieurs projets.
               </Typography>
             </Paper>
           </Grid>
 
           <Grid>
             <Paper sx={{ p: 4, textAlign: "center" }}>
-              <Typography variant="h6">Performance</Typography>
+              <Typography variant="h6">Roadmap</Typography>
               <Typography variant="body2" color="text.secondary">
-                Architecture moderne avec FastAPI & React.
+                Visualiser le planning facilement.
               </Typography>
             </Paper>
           </Grid>

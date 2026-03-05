@@ -1,6 +1,9 @@
 import { useMemo, useRef, useEffect, useState, useCallback } from "react";
 
-type Assignment = {
+/* =========================
+   TYPES
+========================= */
+type RawAssignment = {
   id: number;
   assigned_start_date: string;
   assigned_end_date: string;
@@ -9,8 +12,32 @@ type Assignment = {
     firstname: string;
     lastname: string;
   };
+};
+
+type RawRequest = {
+  id: number;
+  task_type: string;
+  project: { name: string };
+  job: { label: string };
+  assignments: RawAssignment[];
+};
+
+type FlatAssignment = {
+  id: number; // assignment id
+  task_type: string;
+  assigned_start_date: string;
+  assigned_end_date: string;
+  resource: { id: number; firstname: string; lastname: string };
   project: string;
+  job: string;
   color: string;
+};
+
+type Resource = {
+  id: number;
+  firstname: string;
+  lastname: string;
+  assignments: FlatAssignment[];
 };
 
 /* =========================
@@ -21,12 +48,11 @@ const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 40;
 const NAME_COL_WIDTH = 200;
 const HANDLE_WIDTH = 8;
-const DURATION_ADJUSTMENT = 1;
 
 /* =========================
    UTILS
 ========================= */
-const parseLocalDate = (dateStr: string) => {
+const parseLocalDate = (dateStr: string): Date => {
   const [year, month, day] = dateStr.split("-").map(Number);
   return new Date(year, month - 1, day);
 };
@@ -38,11 +64,57 @@ const formatDate = (date: Date): string => {
   return `${y}-${m}-${d}`;
 };
 
+const TASK_COLORS: Record<string, string> = {
+  BUILD: "#3b82f6",
+  REFACTO: "#8b5cf6",
+  DISCO: "#10b981",
+};
+
+const getTaskColor = (task_type: string): string =>
+  TASK_COLORS[task_type] ?? "#6b7280";
+
+function flattenRequests(requests: RawRequest[]): FlatAssignment[] {
+  const result: FlatAssignment[] = [];
+  for (const request of requests) {
+    if (!Array.isArray(request.assignments)) continue;
+    for (const assignment of request.assignments) {
+      result.push({
+        id: assignment.id,
+        task_type: request.task_type,
+        assigned_start_date: assignment.assigned_start_date,
+        assigned_end_date: assignment.assigned_end_date,
+        resource: assignment.resource,
+        project: request.project.name,
+        job: request.job.label,
+        color: getTaskColor(request.task_type),
+      });
+    }
+  }
+  return result;
+}
+
+function groupByResource(flatAssignments: FlatAssignment[]): Resource[] {
+  const map = new Map<number, Resource>();
+  for (const a of flatAssignments) {
+    const rid = a.resource.id;
+    if (!map.has(rid)) {
+      map.set(rid, {
+        id: rid,
+        firstname: a.resource.firstname,
+        lastname: a.resource.lastname,
+        assignments: [],
+      });
+    }
+    map.get(rid)!.assignments.push(a);
+  }
+  return Array.from(map.values());
+}
+
 /* =========================
    RESIZABLE BAR COMPONENT
 ========================= */
 type ResizableBarProps = {
-  assignment: Assignment;
+  assignment: FlatAssignment;
   startIndex: number;
   endIndex: number;
   rowIndex: number;
@@ -58,68 +130,63 @@ function ResizableBar({
   dates,
   onResize,
 }: ResizableBarProps) {
-  const barRef = useRef<HTMLDivElement>(null);
-  const dragState = useRef<{
-    type: "left" | "right" | "move" | null;
-    startX: number;
-    origStartIndex: number;
-    origEndIndex: number;
-  }>({ type: null, startX: 0, origStartIndex: 0, origEndIndex: 0 });
+  // Refs to always have latest values during drag without re-creating handlers
+  const startIndexRef = useRef(startIndex);
+  const endIndexRef = useRef(endIndex);
+  const datesRef = useRef(dates);
 
-  const duration = endIndex - startIndex + DURATION_ADJUSTMENT;
+  useEffect(() => { startIndexRef.current = startIndex; }, [startIndex]);
+  useEffect(() => { endIndexRef.current = endIndex; }, [endIndex]);
+  useEffect(() => { datesRef.current = dates; }, [dates]);
+
+  const duration = endIndex - startIndex + 1;
   const left = NAME_COL_WIDTH + startIndex * DAY_WIDTH;
   const top = rowIndex * ROW_HEIGHT + 6;
   const width = duration * DAY_WIDTH;
 
   const clampIndex = (idx: number) =>
-    Math.max(0, Math.min(dates.length - 1, idx));
+    Math.max(0, Math.min(datesRef.current.length - 1, idx));
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent, type: "left" | "right" | "move") => {
       e.preventDefault();
       e.stopPropagation();
 
-      dragState.current = {
-        type,
-        startX: e.clientX,
-        origStartIndex: startIndex,
-        origEndIndex: endIndex,
-      };
+      const origStart = startIndexRef.current;
+      const origEnd = endIndexRef.current;
+      const startX = e.clientX;
 
       const onMouseMove = (ev: MouseEvent) => {
-        const dx = ev.clientX - dragState.current.startX;
+        const dx = ev.clientX - startX;
         const daysDelta = Math.round(dx / DAY_WIDTH);
-        const { origStartIndex, origEndIndex } = dragState.current;
 
-        let newStart = origStartIndex;
-        let newEnd = origEndIndex;
+        let newStart = origStart;
+        let newEnd = origEnd;
 
         if (type === "left") {
-          newStart = clampIndex(origStartIndex + daysDelta);
-          if (newStart >= newEnd) newStart = newEnd - 1;
+          newStart = clampIndex(origStart + daysDelta);
+          if (newStart >= newEnd) newStart = newEnd;
         } else if (type === "right") {
-          newEnd = clampIndex(origEndIndex + daysDelta);
-          if (newEnd <= newStart) newEnd = newStart + 1;
+          newEnd = clampIndex(origEnd + daysDelta);
+          if (newEnd <= newStart) newEnd = newStart;
         } else {
-          // move
-          const len = origEndIndex - origStartIndex;
-          newStart = clampIndex(origStartIndex + daysDelta);
-          newEnd = clampIndex(newStart + len);
-          if (newEnd >= dates.length) {
-            newEnd = dates.length - 1;
+          const len = origEnd - origStart;
+          newStart = clampIndex(origStart + daysDelta);
+          newEnd = newStart + len;
+          if (newEnd >= datesRef.current.length) {
+            newEnd = datesRef.current.length - 1;
             newStart = newEnd - len;
           }
         }
 
         onResize(
           assignment.id,
-          formatDate(dates[newStart]),
-          formatDate(dates[newEnd])
+          formatDate(datesRef.current[newStart]),
+          formatDate(datesRef.current[newEnd])
         );
       };
 
       const onMouseUp = () => {
-        dragState.current.type = null;
         window.removeEventListener("mousemove", onMouseMove);
         window.removeEventListener("mouseup", onMouseUp);
       };
@@ -127,12 +194,46 @@ function ResizableBar({
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp);
     },
-    [startIndex, endIndex, dates, assignment.id, onResize]
+    [assignment.id, onResize]
+  );
+
+  const Handle = ({ side }: { side: "left" | "right" }) => (
+    <div
+      onMouseDown={(e) => handleMouseDown(e, side)}
+      style={{
+        position: "absolute",
+        [side]: 0,
+        top: 0,
+        width: HANDLE_WIDTH,
+        height: "100%",
+        cursor: "ew-resize",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0,0,0,0.15)",
+        borderRadius: side === "left" ? "6px 0 0 6px" : "0 6px 6px 0",
+        zIndex: 10,
+        pointerEvents: "auto",
+      }}
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            style={{
+              width: 2,
+              height: 2,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.8)",
+            }}
+          />
+        ))}
+      </div>
+    </div>
   );
 
   return (
     <div
-      ref={barRef}
       style={{
         position: "absolute",
         left,
@@ -150,54 +251,13 @@ function ResizableBar({
         userSelect: "none",
         cursor: "grab",
         overflow: "hidden",
-        transition: "box-shadow 0.15s",
         pointerEvents: "auto",
       }}
       onMouseDown={(e) => handleMouseDown(e, "move")}
-      title={`${assignment.id} (${assignment.assigned_start_date} → ${assignment.assigned_end_date})`}
+      title={`${assignment.project} (${assignment.assigned_start_date} → ${assignment.assigned_end_date})`}
     >
-      {/* Left resize handle */}
-      <div
-        onMouseDown={(e) => handleMouseDown(e, "left")}
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          width: HANDLE_WIDTH,
-          height: "100%",
-          cursor: "ew-resize",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "rgba(0,0,0,0.15)",
-          borderRadius: "6px 0 0 6px",
-          zIndex: 10,
-          flexShrink: 0,
-          pointerEvents: "auto",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 2,
-          }}
-        >
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              style={{
-                width: 2,
-                height: 2,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.8)",
-              }}
-            />
-          ))}
-        </div>
-      </div>
+      <Handle side="left" />
 
-      {/* Label */}
       <span
         style={{
           flex: 1,
@@ -210,49 +270,10 @@ function ResizableBar({
           pointerEvents: "none",
         }}
       >
-        {assignment.project}
+        {assignment.project} ({assignment.task_type})
       </span>
 
-      {/* Right resize handle */}
-      <div
-        onMouseDown={(e) => handleMouseDown(e, "right")}
-        style={{
-          position: "absolute",
-          right: 0,
-          top: 0,
-          width: HANDLE_WIDTH,
-          height: "100%",
-          cursor: "ew-resize",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "rgba(0,0,0,0.15)",
-          borderRadius: "0 6px 6px 0",
-          zIndex: 10,
-          flexShrink: 0,
-          pointerEvents: "auto",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 2,
-          }}
-        >
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              style={{
-                width: 2,
-                height: 2,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.8)",
-              }}
-            />
-          ))}
-        </div>
-      </div>
+      <Handle side="right" />
     </div>
   );
 }
@@ -261,56 +282,33 @@ function ResizableBar({
    COMPONENT PRINCIPAL
 ========================= */
 export default function Roadmap() {
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const resAssignments = await fetch("http://127.0.0.1:8000/assignments/");
-        const assignmentsData: Assignment[] = await resAssignments.json();
-        setAssignments(assignmentsData);
-      } catch (err) {
-        console.error("Erreur fetch roadmap:", err);
-      }
-    };
-    fetchData();
-  }, []);
-
-
-
-
-
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const e = await fetch("http://127.0.0.1:8000/requests/");
-        const r: Assignment[] = await e.json();
-        console.log(r)
-      } catch (err) {
-        console.error("Erreur fetch roadmap:", err);
-      }
-    };
-    fetchData();
-  }, []);
-
-
-
-
-
-
-
+  const [flatAssignments, setFlatAssignments] = useState<FlatAssignment[]>([]);
 
   const today = new Date();
   const [yearOffset, setYearOffset] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const baseYear = today.getFullYear() + yearOffset;
 
+  // Fetch requests from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/requests/");
+        const data = await res.json();
+        const requests: RawRequest[] = Array.isArray(data) ? data : data.results ?? [];
+        setFlatAssignments(flattenRequests(requests));
+      } catch (err) {
+        console.error("Erreur fetch roadmap:", err);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Generate all dates for the year
   const dates = useMemo(() => {
-    const start = new Date(baseYear, 0, 1);
-    const end = new Date(baseYear, 11, 31);
     const result: Date[] = [];
-    const current = new Date(start);
+    const current = new Date(baseYear, 0, 1);
+    const end = new Date(baseYear, 11, 31);
     while (current <= end) {
       result.push(new Date(current));
       current.setDate(current.getDate() + 1);
@@ -318,7 +316,9 @@ export default function Roadmap() {
     return result;
   }, [baseYear]);
 
-  const scrollToToday = () => {
+  const resources = useMemo(() => groupByResource(flatAssignments), [flatAssignments]);
+
+  const scrollToToday = useCallback(() => {
     if (!scrollRef.current) return;
     const todayIndex = dates.findIndex(
       (d) =>
@@ -327,26 +327,24 @@ export default function Roadmap() {
         d.getDate() === today.getDate()
     );
     if (todayIndex >= 0) {
-      scrollRef.current.scrollTo({ left: todayIndex * DAY_WIDTH, behavior: "smooth" });
+      scrollRef.current.scrollTo({ left: todayIndex * DAY_WIDTH - 200, behavior: "smooth" });
     }
-  };
+  }, [dates]);
 
   useEffect(() => {
     if (yearOffset === 0) setTimeout(scrollToToday, 100);
-  }, [yearOffset]);
+  }, [yearOffset, scrollToToday]);
 
-  const handleResize = useCallback(
-    (id: number, newStart: string, newEnd: string) => {
-      setAssignments((prev) =>
-        prev.map((a) =>
-          a.id === id
-            ? { ...a, assigned_start_date: newStart, assigned_end_date: newEnd }
-            : a
-        )
-      );
-    },
-    []
-  );
+  // Update a single assignment's dates after resize
+  const handleResize = useCallback((id: number, newStart: string, newEnd: string) => {
+    setFlatAssignments((prev) =>
+      prev.map((a) =>
+        a.id === id
+          ? { ...a, assigned_start_date: newStart, assigned_end_date: newEnd }
+          : a
+      )
+    );
+  }, []);
 
   return (
     <div style={{ padding: 20, fontFamily: "sans-serif" }}>
@@ -370,9 +368,7 @@ export default function Roadmap() {
           position: "relative",
         }}
       >
-        <table
-          style={{ borderCollapse: "collapse", width: "max-content", boxSizing: "border-box" }}
-        >
+        <table style={{ borderCollapse: "collapse", width: "max-content" }}>
           <thead>
             <tr>
               <th
@@ -380,39 +376,43 @@ export default function Roadmap() {
                   position: "sticky",
                   left: 0,
                   width: NAME_COL_WIDTH,
+                  minWidth: NAME_COL_WIDTH,
                   background: "#f9fafb",
                   zIndex: 2,
-                  boxSizing: "border-box",
                   padding: 0,
+                  boxSizing: "border-box",
                 }}
               >
                 Ressource
               </th>
-              {dates.map((date, index) => (
-                <th
-                  key={index}
-                  style={{
-                    width: DAY_WIDTH,
-                    height: HEADER_HEIGHT,
-                    fontSize: 10,
-                    background:
-                      date.getFullYear() === today.getFullYear() &&
-                      date.getMonth() === today.getMonth() &&
-                      date.getDate() === today.getDate()
-                        ? "#fde68a"
-                        : "#fafafa",
-                    boxSizing: "border-box",
-                    padding: 0,
-                  }}
-                >
-                  {date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
-                </th>
-              ))}
+              {dates.map((date, index) => {
+                const isToday =
+                  date.getFullYear() === today.getFullYear() &&
+                  date.getMonth() === today.getMonth() &&
+                  date.getDate() === today.getDate();
+                return (
+                  <th
+                    key={index}
+                    style={{
+                      width: DAY_WIDTH,
+                      minWidth: DAY_WIDTH,
+                      height: HEADER_HEIGHT,
+                      fontSize: 10,
+                      background: isToday ? "#fde68a" : "#fafafa",
+                      padding: 0,
+                      boxSizing: "border-box",
+                      fontWeight: isToday ? 700 : 400,
+                    }}
+                  >
+                    {date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
-            {assignments.map((assignment) => (
-              <tr key={assignment.id}>
+            {resources.map((resource) => (
+              <tr key={resource.id}>
                 <td
                   style={{
                     position: "sticky",
@@ -423,11 +423,11 @@ export default function Roadmap() {
                     borderRight: "1px solid #ddd",
                     fontWeight: 500,
                     height: ROW_HEIGHT,
-                    boxSizing: "border-box",
                     padding: "0 8px",
+                    boxSizing: "border-box",
                   }}
                 >
-                  {assignment.resource.firstname} {assignment.resource.lastname}
+                  {resource.firstname} {resource.lastname}
                 </td>
                 {dates.map((_, index) => (
                   <td
@@ -436,8 +436,8 @@ export default function Roadmap() {
                       width: DAY_WIDTH,
                       height: ROW_HEIGHT,
                       borderRight: "1px solid #f3f4f6",
-                      boxSizing: "border-box",
                       padding: 0,
+                      boxSizing: "border-box",
                     }}
                   />
                 ))}
@@ -452,43 +452,42 @@ export default function Roadmap() {
             position: "absolute",
             top: HEADER_HEIGHT,
             left: 0,
-            pointerEvents: "none", // les barres individuelles remettent pointerEvents: "auto"
+            pointerEvents: "none",
           }}
         >
-          {assignments.map((assignment, rowIndex) => {
-            const start = parseLocalDate(assignment.assigned_start_date);
-            const end = parseLocalDate(assignment.assigned_end_date);
+          {resources.map((resource, rowIndex) =>
+            resource.assignments.map((assignment) => {
+              const start = parseLocalDate(assignment.assigned_start_date);
+              const end = parseLocalDate(assignment.assigned_end_date);
 
-            const startIndex = dates.findIndex(
-              (d) =>
-                d.getFullYear() === start.getFullYear() &&
-                d.getMonth() === start.getMonth() &&
-                d.getDate() === start.getDate()
-            );
-            const endIndex = dates.findIndex(
-              (d) =>
-                d.getFullYear() === end.getFullYear() &&
-                d.getMonth() === end.getMonth() &&
-                d.getDate() === end.getDate()
-            );
+              const startIndex = dates.findIndex(
+                (d) =>
+                  d.getFullYear() === start.getFullYear() &&
+                  d.getMonth() === start.getMonth() &&
+                  d.getDate() === start.getDate()
+              );
+              const endIndex = dates.findIndex(
+                (d) =>
+                  d.getFullYear() === end.getFullYear() &&
+                  d.getMonth() === end.getMonth() &&
+                  d.getDate() === end.getDate()
+              );
 
-            if (startIndex === -1 || endIndex === -1) return null;
+              if (startIndex === -1 || endIndex === -1) return null;
 
-            return (
-              <ResizableBar
-                key={assignment.id}
-                assignment={assignment}
-                startIndex={startIndex}
-                endIndex={endIndex}
-                rowIndex={rowIndex}
-                dates={dates}
-                onResize={handleResize}
-              />
-            );
-          })}
-
-
-         
+              return (
+                <ResizableBar
+                  key={assignment.id}
+                  assignment={assignment}
+                  startIndex={startIndex}
+                  endIndex={endIndex}
+                  rowIndex={rowIndex}
+                  dates={dates}
+                  onResize={handleResize}
+                />
+              );
+            })
+          )}
         </div>
       </div>
     </div>

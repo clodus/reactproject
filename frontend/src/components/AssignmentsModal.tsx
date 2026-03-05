@@ -43,7 +43,7 @@ export default function AssignmentsModal({ requestId, jobId, onClose, onAssignme
   const createAssignment = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const response = await fetch(`${API_URL}/assignments`, {
+    const response = await fetch(`${API_URL}/assignments/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

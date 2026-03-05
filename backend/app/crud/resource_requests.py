@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 from app import models
 
 def create_resource_request(db: Session, request):
@@ -14,9 +14,9 @@ def read_resource_requests(db: Session):
     requests = (
         db.query(models.ResourceRequest)
         .options(
-            selectinload(models.ResourceRequest.project),
-            selectinload(models.ResourceRequest.job),
-            selectinload(models.ResourceRequest.assignments)
+            joinedload(models.ResourceRequest.project),
+            joinedload(models.ResourceRequest.job),
+            joinedload(models.ResourceRequest.assignments).joinedload(models.ResourceAssignment.resource)
         )
         .all()
     )

@@ -9,9 +9,7 @@ router = APIRouter(prefix="/requests", tags=["requests"])
 
 @router.get("/", response_model=list[schemas.ResponseResourceRequestRead])
 def get_requests(db: Session = Depends(get_db)):
-    a = crud.read_resource_requests(db)
-    print(jsonable_encoder(a))
-    return a
+    return crud.read_resource_requests(db)
 
 @router.post("/", response_model=schemas.ResponseResourceRequestRead)
 def post_request(

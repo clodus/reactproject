@@ -41,6 +41,7 @@ class Resource(Base, TimestampMixin):
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("jobs.id"), nullable=True)
 
     job: Mapped[Optional[job]] = relationship("Job", back_populates="resources")
+    assignments: Mapped[List["ResourceAssignment"]] = relationship("ResourceAssignment",back_populates="resource")
 
 ###
 # TABLE JOBS
@@ -124,4 +125,4 @@ class ResourceAssignment(Base, TimestampMixin):
     assigned_end_date: Mapped[Date] = mapped_column(Date)
 
     request = relationship("ResourceRequest", back_populates="assignments")
-    resource = relationship("Resource", backref="assignments")
+    resource = relationship("Resource", back_populates="assignments")

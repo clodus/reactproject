@@ -21,4 +21,4 @@ def create_project(
 
 @router.delete("/{project_id}", status_code=204)
 def delete_project(project_id: int, db: Session = Depends(get_db)):
-    return crud.delete_job(db, project_id)
+    return crud.delete_project(db, project_id)

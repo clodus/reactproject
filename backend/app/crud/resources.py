@@ -4,7 +4,8 @@ from sqlalchemy.orm import selectinload, Session
 from app import models, schemas
 
 def read_resources(db: Session, job_id: int | None = None):
-    stmt = select(models.Resource).options(selectinload(models.Resource.job))
+    stmt = select(models.Resource).options(
+        selectinload(models.Resource.job))
 
     # 👇 ajout du filtre conditionnel
     if job_id is not None:
