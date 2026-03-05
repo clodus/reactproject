@@ -1,8 +1,10 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import date
 from app.models import TaskType
 from app.schemas.projects import ProjectRead
 from app.schemas.jobs import JobRead
+from app.schemas.resource_assignments import ResponseResourceAssignmentRead
+from app.schemas.resources import ResponseResourceRead
 
 
 ###################
@@ -30,5 +32,6 @@ class ResponseResourceRequestRead(BaseModel):
     duration_days: int
     project: ProjectRead
     job: JobRead
-
+    assignments: list[ResponseResourceAssignmentRead] = Field(default_factory=list)
+    assignments_count: int = 0
     model_config = ConfigDict(from_attributes=True)

@@ -1,6 +1,6 @@
 from app.schemas import resources as schemas
 from app.crud import resources as crud
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app import models
@@ -9,8 +9,8 @@ from typing import List
 router = APIRouter(prefix="/resources", tags=["resources"])
 
 @router.get("/", response_model=list[schemas.ResponseResourceRead])
-def get_resources(db: Session = Depends(get_db)):
-    return crud.read_resources(db)
+def get_resources(db: Session = Depends(get_db), job_id: int | None = Query(default=None)):
+    return crud.read_resources(db, job_id)
 
 @router.post("/", response_model=schemas.ResponseResourceRead, status_code=201) # on récupère la reponse
 def post_resource(

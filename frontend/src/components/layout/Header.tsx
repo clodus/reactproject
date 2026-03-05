@@ -28,6 +28,9 @@ export default function Header() {
           <Button color="inherit" component={Link} to="/requests">
             Requests
           </Button>
+          <Button color="inherit" component={Link} to="/roadmap">
+            Roadmap
+          </Button>
         </Box>
       </Toolbar>
     </AppBar>

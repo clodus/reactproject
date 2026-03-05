@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import AssignmentsModal from "../components/AssignmentsModal";
 
 type Project = {
   id: number;
@@ -15,6 +16,7 @@ type ResourceRequest = {
   task_type: string;
   due_date: string;
   duration_days: number;
+  assignments_count: number;
   project: {
     id: number;
     name: string;
@@ -38,6 +40,8 @@ export default function Requests() {
   const [dueDate, setDueDate] = useState("");
   const [durationDays, setDurationDays] = useState("");
 
+  const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
+
   const fetchData = async () => {
     const resProjects = await fetch(`${API_URL}/projects/`);
     const resJobs = await fetch(`${API_URL}/jobs/`);
@@ -46,6 +50,9 @@ export default function Requests() {
     setProjects(await resProjects.json());
     setJobs(await resJobs.json());
     setRequests(await resRequests.json());
+
+    
+    
   };
 
   useEffect(() => {
@@ -236,23 +243,56 @@ export default function Requests() {
                 </div>
               </div>
 
-              <button
-                onClick={() => handleDelete(r.id)}
-                style={{
-                  background: "#fee2e2",
-                  border: "none",
-                  padding: "6px 10px",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  color: "#b91c1c",
-                  fontWeight: 600,
-                }}
-              >
-                Supprimer
-              </button>
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                  onClick={() => setSelectedRequestId(r.id)}
+                  style={{
+                    background: r.assignments_count === 0 ? "#ff6600" : "#0ed439",
+                    color: r.assignments_count === 0 ? "#ffffff" : "#ffffff",
+                    border: "none",
+                    padding: "6px 10px",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                  }}
+                >
+                  Assignations ({r.assignments_count})
+                </button>
+
+                <button
+                  onClick={() => handleDelete(r.id)}
+                  style={{
+                    background: "#fee2e2",
+                    border: "none",
+                    padding: "6px 10px",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    color: "#b91c1c",
+                    fontWeight: 600,
+                  }}
+                >
+                  Supprimer
+                </button>
+              </div>
             </li>
           ))}
         </ul>
+        {selectedRequestId && (
+          <AssignmentsModal
+            requestId={selectedRequestId}
+            jobId={requests.find(r => r.id === selectedRequestId)?.job.id!}
+            onClose={() => setSelectedRequestId(null)}
+            onAssignmentsChange={(newCount: number) => {
+              setRequests(prev =>
+                prev.map(r =>
+                  r.id === selectedRequestId
+                    ? { ...r, assignments_count: newCount }
+                    : r
+                )
+              );
+            }}
+          />
+        )}
       </div>
     </div>
   );

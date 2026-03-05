@@ -3,9 +3,17 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload, Session
 from app import models, schemas
 
-def read_resources(db: Session):
+def read_resources(db: Session, job_id: int | None = None):
     stmt = select(models.Resource).options(selectinload(models.Resource.job))
-    return db.scalars(stmt).all() # renvoie une liste d'objets Resource 
+
+    # 👇 ajout du filtre conditionnel
+    if job_id is not None:
+        stmt = stmt.where(
+            models.Resource.job_id == job_id
+        )
+
+    result = db.execute(stmt)
+    return result.scalars().all()
 
 def create_resource(db: Session, resource):
     db_resource = models.Resource(**resource.model_dump())

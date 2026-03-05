@@ -5,6 +5,7 @@ import Resources from "./pages/Resources";
 import Jobs from "./pages/Jobs";
 import Projects from "./pages/Projects";
 import Requests from "./pages/Requests";
+import Roadmap from "./pages/Roadmap";
 import './App.css'
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
           <Route path="/jobs" element={<Jobs />} />
           <Route path="/projects" element={<Projects />} />
           <Route path="/requests" element={<Requests />} />
+          <Route path="/roadmap" element={<Roadmap />} />
         </Routes>
       </Layout>
     </BrowserRouter>

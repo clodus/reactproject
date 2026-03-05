@@ -102,3 +102,26 @@ class ResourceRequest(Base):
     # relations
     project = relationship("Project")
     job = relationship("Job")
+    assignments = relationship("ResourceAssignment", back_populates="request", cascade="all, delete-orphan")
+
+###
+# TABLE RESOURCE ASSIGNEMENTS
+###
+class ResourceAssignment(Base, TimestampMixin):
+    __tablename__ = "resource_assignments"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    resource_request_id: Mapped[int] = mapped_column(
+        ForeignKey("resource_requests.id", ondelete="CASCADE")
+    )
+
+    resource_id: Mapped[int] = mapped_column(
+        ForeignKey("resources.id", ondelete="CASCADE")
+    )
+
+    assigned_start_date: Mapped[Date] = mapped_column(Date)
+    assigned_end_date: Mapped[Date] = mapped_column(Date)
+
+    request = relationship("ResourceRequest", back_populates="assignments")
+    resource = relationship("Resource", backref="assignments")

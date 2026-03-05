@@ -11,15 +11,20 @@ def create_resource_request(db: Session, request):
     return db_request
 
 def read_resource_requests(db: Session):
-    stmt = (
-        select(models.ResourceRequest)
+    requests = (
+        db.query(models.ResourceRequest)
         .options(
             selectinload(models.ResourceRequest.project),
             selectinload(models.ResourceRequest.job),
+            selectinload(models.ResourceRequest.assignments)
         )
+        .all()
     )
-    result = db.execute(stmt)
-    return result.scalars().all()
+
+    for r in requests:
+        r.assignments_count = len(r.assignments)
+
+    return requests
 
 def delete_resource_request(db: Session, request_id: int):
     request = db.get(models.ResourceRequest, request_id)

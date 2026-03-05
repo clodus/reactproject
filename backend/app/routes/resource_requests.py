@@ -3,14 +3,14 @@ from app.crud import resource_requests as crud
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.database import get_db
+from fastapi.encoders import jsonable_encoder
 
 router = APIRouter(prefix="/requests", tags=["requests"])
 
-
 @router.get("/", response_model=list[schemas.ResponseResourceRequestRead])
 def get_requests(db: Session = Depends(get_db)):
-    return crud.read_resource_requests(db)
-
+    a = crud.read_resource_requests(db)
+    return a
 
 @router.post("/", response_model=schemas.ResponseResourceRequestRead)
 def post_request(
