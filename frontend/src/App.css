@@ -17,22 +17,3 @@
   }
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-/* Scrollbar customisée */
-div::-webkit-scrollbar {
-  width: 6px;
-}
-
-div::-webkit-scrollbar-thumb {
-  background: #9ca3af;
-  border-radius: 3px;
-}

@@ -4,6 +4,11 @@ type Assignment = {
   id: number;
   assigned_start_date: string;
   assigned_end_date: string;
+  resource: {
+    id: number;
+    firstname: string;
+    lastname: string;
+  };
   project: string;
   color: string;
 };
@@ -149,7 +154,7 @@ function ResizableBar({
         pointerEvents: "auto",
       }}
       onMouseDown={(e) => handleMouseDown(e, "move")}
-      title={`${assignment.project} (${assignment.assigned_start_date} → ${assignment.assigned_end_date})`}
+      title={`${assignment.id} (${assignment.assigned_start_date} → ${assignment.assigned_end_date})`}
     >
       {/* Left resize handle */}
       <div
@@ -270,6 +275,31 @@ export default function Roadmap() {
     };
     fetchData();
   }, []);
+
+
+
+
+
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const e = await fetch("http://127.0.0.1:8000/requests/");
+        const r: Assignment[] = await e.json();
+        console.log(r)
+      } catch (err) {
+        console.error("Erreur fetch roadmap:", err);
+      }
+    };
+    fetchData();
+  }, []);
+
+
+
+
+
+
+
 
   const today = new Date();
   const [yearOffset, setYearOffset] = useState(0);
@@ -397,7 +427,7 @@ export default function Roadmap() {
                     padding: "0 8px",
                   }}
                 >
-                  {assignment.id}
+                  {assignment.resource.firstname} {assignment.resource.lastname}
                 </td>
                 {dates.map((_, index) => (
                   <td
@@ -456,6 +486,9 @@ export default function Roadmap() {
               />
             );
           })}
+
+
+         
         </div>
       </div>
     </div>

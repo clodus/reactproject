@@ -4,6 +4,7 @@ from app.schemas.resources import ResponseResourceRead
 
 
 
+
 # -------- REQUEST --------
 
 class RequestResourceAssignmentCreate(BaseModel):
