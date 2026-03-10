@@ -55,3 +55,18 @@ def read_assignments_by_request(db: Session, request_id: int):
         return None
 
     return request.assignments
+
+def update_resource_assignment(db: Session, assignment_id: int, assignment):
+    db_assignment = db.query(models.ResourceAssignment).filter(
+        models.ResourceAssignment.id == assignment_id
+    ).first()
+
+    if db_assignment is None:
+        return None
+
+    for key, value in assignment.model_dump(exclude_unset=True).items():
+        setattr(db_assignment, key, value)
+
+    db.commit()
+    db.refresh(db_assignment)
+    return db_assignment

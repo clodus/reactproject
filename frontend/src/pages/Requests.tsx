@@ -30,7 +30,7 @@ type ResourceRequest = {
 // Group requests by month (sorted by due_date)
 function groupByMonth(requests: ResourceRequest[]): Record<string, ResourceRequest[]> {
   const sorted = [...requests].sort(
-    (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+    (b, a) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
   );
 
   return sorted.reduce<Record<string, ResourceRequest[]>>((acc, r) => {
@@ -57,6 +57,10 @@ export default function Requests() {
 
   const [selectedRequestId, setSelectedRequestId] = useState<number | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+
+  // Filter states
+  const [filterProjectId, setFilterProjectId] = useState("");
+  const [filterJobId, setFilterJobId] = useState("");
 
   const fetchData = async () => {
     const resProjects = await fetch(`${API_URL}/projects/`);
@@ -120,7 +124,14 @@ export default function Requests() {
     fontWeight: 600,
   };
 
-  const groupedRequests = groupByMonth(requests);
+  // Apply filters
+  const filteredRequests = requests.filter(r => {
+    const matchProject = filterProjectId === "" || r.project?.id === Number(filterProjectId);
+    const matchJob = filterJobId === "" || r.job?.id === Number(filterJobId);
+    return matchProject && matchJob;
+  });
+
+  const groupedRequests = groupByMonth(filteredRequests);
 
   return (
     <div
@@ -275,9 +286,71 @@ export default function Requests() {
             boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
           }}
         >
-          <h3 style={{ marginTop: 0, marginBottom: "24px", fontWeight: 600 }}>
-            Liste des demandes
-          </h3>
+          {/* Header + Filters */}
+          <div style={{ marginBottom: "24px" }}>
+            <h3 style={{ marginTop: 0, marginBottom: "16px", fontWeight: 600 }}>
+              Liste des demandes
+            </h3>
+
+            {/* Filters row */}
+            <div style={{ display: "flex", gap: "12px" }}>
+              <select
+                value={filterProjectId}
+                onChange={e => setFilterProjectId(e.target.value)}
+                style={{
+                  ...inputStyle,
+                  background: filterProjectId ? "#eff6ff" : "#f8fafc",
+                  borderColor: filterProjectId ? "#93c5fd" : "#dcdcdc",
+                  color: filterProjectId ? "#1d4ed8" : "#64748b",
+                  fontWeight: filterProjectId ? 600 : 400,
+                  flex: 1,
+                }}
+              >
+                <option value="">Tous les projets</option>
+                {projects.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+
+              <select
+                value={filterJobId}
+                onChange={e => setFilterJobId(e.target.value)}
+                style={{
+                  ...inputStyle,
+                  background: filterJobId ? "#eff6ff" : "#f8fafc",
+                  borderColor: filterJobId ? "#93c5fd" : "#dcdcdc",
+                  color: filterJobId ? "#1d4ed8" : "#64748b",
+                  fontWeight: filterJobId ? 600 : 400,
+                  flex: 1,
+                }}
+              >
+                <option value="">Tous les jobs</option>
+                {jobs.map(j => (
+                  <option key={j.id} value={j.id}>{j.label}</option>
+                ))}
+              </select>
+
+              {(filterProjectId || filterJobId) && (
+                <button
+                  onClick={() => { setFilterProjectId(""); setFilterJobId(""); }}
+                  style={{
+                    padding: "10px 16px",
+                    borderRadius: "8px",
+                    border: "1px solid #fca5a5",
+                    background: "#fff1f2",
+                    color: "#b91c1c",
+                    fontWeight: 600,
+                    fontSize: "13px",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
+                  }}
+                >
+                  ✕ Réinitialiser
+                </button>
+              )}
+            </div>
+          </div>
 
           {Object.keys(groupedRequests).length === 0 && (
             <p style={{ color: "#94a3b8", textAlign: "center", padding: "20px 0" }}>

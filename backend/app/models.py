@@ -1,7 +1,7 @@
 # structure de ta base de données (SQLAlchemy)
 from typing import List, Optional
 from datetime import datetime
-from sqlalchemy import String, Text, ForeignKey, Table, Column, DateTime, func, Enum, Date, Integer
+from sqlalchemy import String, Text, ForeignKey, Table, Column, DateTime, func, Enum, Date, Integer, Boolean
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -111,6 +111,8 @@ class ResourceRequest(Base):
 class ResourceAssignment(Base, TimestampMixin):
     __tablename__ = "resource_assignments"
 
+    # detect conflict
+
     id: Mapped[int] = mapped_column(primary_key=True)
 
     resource_request_id: Mapped[int] = mapped_column(
@@ -123,6 +125,8 @@ class ResourceAssignment(Base, TimestampMixin):
 
     assigned_start_date: Mapped[Date] = mapped_column(Date)
     assigned_end_date: Mapped[Date] = mapped_column(Date)
+
+    detect_conflict: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
 
     request = relationship("ResourceRequest", back_populates="assignments")
     resource = relationship("Resource", back_populates="assignments")

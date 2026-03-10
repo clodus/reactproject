@@ -28,3 +28,14 @@ def delete_assignment(
         raise HTTPException(status_code=404, detail="Assignment not found")
 
     return {"message": "Assignment deleted"}
+
+@router.patch("/{assignment_id}", response_model=schemas.ResponseResourceAssignmentRead)
+def patch_assignment(
+    assignment_id: int,
+    assignment: schemas.RequestResourceAssignmentUpdate,
+    db: Session = Depends(get_db),
+):
+    db_assignment = crud.update_resource_assignment(db, assignment_id, assignment)
+    if db_assignment is None:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    return db_assignment
