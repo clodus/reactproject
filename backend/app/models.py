@@ -75,6 +75,7 @@ class TaskType(PyEnum):
     ESTIMATION = "ESTIMATION"
     REFACTO = "REFACTO"
     KT = "KT"
+    ABSENCE = "ABSENCE"
 
 ###
 # TABLE RESOURCE REQUESTS

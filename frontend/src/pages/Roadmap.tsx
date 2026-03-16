@@ -41,13 +41,12 @@ type Resource = {
   assignments: FlatAssignment[];
 };
 
-
-
 const TASK_COLORS: Record<string, string> = {
   BUILD: "#3b82f6",
   REFACTO: "#8b5cf6",
   DISCO: "#10b981",
   RUN: "#b91010",
+  ABSENCE: "#e5ec18",
 };
 
 const getTaskColor = (task_type: string): string =>

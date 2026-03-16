@@ -4,6 +4,7 @@ import ConflictModal, {
   type ConflictEntry,
   type Assignment,
 } from "../components/ConflictModal";
+import AbsenceModal from "../components/AbsenceModal";
 
 type Job = { id: number; label: string };
 type Resource = {
@@ -25,6 +26,8 @@ export default function Resources() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [conflictMap, setConflictMap] = useState<Record<number, ConflictDetail[]>>({});
   const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
+  const [isAbsenceModalOpen, setIsAbsenceModalOpen] = useState(false);
+  const [selectedResourceForAbsence, setSelectedResourceForAbsence] = useState<Resource | null>(null);
   const [email, setEmail] = useState("");
   const [firstname, setFirstname] = useState("");
   const [lastname, setLastname] = useState("");
@@ -170,6 +173,11 @@ export default function Resources() {
     } catch {
       setError("Erreur lors de la suppression");
     }
+  };
+
+  const handleOpenAbsenceModal = (resource: Resource) => {
+    setSelectedResourceForAbsence(resource);
+    setIsAbsenceModalOpen(true);
   };
 
   // ─── Derived ─────────────────────────────────────────────────────────────────
@@ -367,32 +375,65 @@ export default function Resources() {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => handleDelete(resource.id)}
-                  style={{
-                    background: "#fee2e2",
-                    border: "none",
-                    padding: "6px 10px",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    color: "#b91c1c",
-                    fontWeight: 600,
-                  }}
-                >
-                  Supprimer
-                </button>
+                {/* ── Actions ── */}
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <button
+                    onClick={() => handleOpenAbsenceModal(resource)}
+                    style={{
+                      background: "#eff6ff",
+                      border: "1px solid #bfdbfe",
+                      padding: "6px 12px",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      color: "#1d4ed8",
+                      fontWeight: 600,
+                      fontSize: "13px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    🗓️ Poser des absences
+                  </button>
+
+                  <button
+                    onClick={() => handleDelete(resource.id)}
+                    style={{
+                      background: "#fee2e2",
+                      border: "none",
+                      padding: "6px 10px",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      color: "#b91c1c",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Supprimer
+                  </button>
+                </div>
               </li>
             );
           })}
         </ul>
       </div>
 
-      {/* ── Modal ── */}
+      {/* ── Conflict Modal ── */}
       <ConflictModal
         isOpen={isConflictModalOpen}
         onClose={() => setIsConflictModalOpen(false)}
         conflictEntries={conflictEntries}
-        onConflictResolved={fetchAssignmentsAndDetectConflicts}  // ← bien présent ?
+        onConflictResolved={fetchAssignmentsAndDetectConflicts}
+      />
+
+      {/* ── Absence Modal ── */}
+      <AbsenceModal
+        isOpen={isAbsenceModalOpen}
+        onClose={() => {
+          setIsAbsenceModalOpen(false);
+          setSelectedResourceForAbsence(null);
+        }}
+        resource={selectedResourceForAbsence}
       />
     </div>
   );
